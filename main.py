@@ -59,10 +59,22 @@ async def auth_callback(code: str):
 
     return {
         "message": "Login successful!",
+        "access_token": access_token,
         "your_repos": repo_names
     }
 
-    return {
-        "message": "Login successful!",
-        "your_repos": repo_names
-    }
+@app.get("/repo-files")
+async def get_repo_files(owner: str, repo: str, token: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.github.com/repos/{owner}/{repo}/contents/",
+            headers={"Authorization": f"token {token}"},
+        )
+        files_data = response.json()
+
+    files_list = [
+        {"name": item["name"], "type": item["type"], "path": item["path"]}
+        for item in files_data
+    ]
+
+    return {"repo": repo, "files": files_list}
