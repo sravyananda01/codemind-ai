@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 import httpx
 from groq import Groq
+from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
@@ -13,6 +14,7 @@ CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
 REDIRECT_URI = "http://localhost:8000/auth/callback"
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 @app.get("/")
 def home():
@@ -163,4 +165,33 @@ Code:
     return {
         "file": file_data.get("name"),
         "generated_tests": ai_response
+    }
+@app.get("/chunk-and-embed")
+async def chunk_and_embed(owner: str, repo: str, path: str, token: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.github.com/repos/{owner}/{repo}/contents/{path}",
+            headers={"Authorization": f"token {token}"},
+        )
+        file_data = response.json()
+
+    import base64
+    encoded_content = file_data.get("content", "")
+    code_content = base64.b64decode(encoded_content).decode("utf-8")
+
+    # Split code into chunks of ~500 characters each
+    chunk_size = 500
+    chunks = [
+        code_content[i:i + chunk_size]
+        for i in range(0, len(code_content), chunk_size)
+    ]
+
+    # Convert each chunk into an embedding (list of numbers)
+    embeddings = embedding_model.encode(chunks)
+
+    return {
+        "file": file_data.get("name"),
+        "total_chunks": len(chunks),
+        "first_chunk_preview": chunks[0] if chunks else "",
+        "embedding_size": len(embeddings[0]) if len(embeddings) > 0 else 0
     }
