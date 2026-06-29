@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
 import os
 import httpx
+from groq import Groq
 
 load_dotenv()
 
@@ -11,6 +12,7 @@ app = FastAPI()
 CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
 REDIRECT_URI = "http://localhost:8000/auth/callback"
+groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 @app.get("/")
 def home():
@@ -94,4 +96,38 @@ async def get_file_content(owner: str, repo: str, path: str, token: str):
     return {
         "file": file_data.get("name"),
         "content": decoded_content
+    }
+@app.get("/analyze-code")
+async def analyze_code(owner: str, repo: str, path: str, token: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.github.com/repos/{owner}/{repo}/contents/{path}",
+            headers={"Authorization": f"token {token}"},
+        )
+        file_data = response.json()
+
+    import base64
+    encoded_content = file_data.get("content", "")
+    code_content = base64.b64decode(encoded_content).decode("utf-8")
+
+    prompt = f"""You are a senior software engineer reviewing code.
+Analyze the following code and provide:
+1. A brief explanation of what it does
+2. Any bugs or issues you find
+3. Suggestions for improvement
+
+Code:
+{code_content}
+"""
+
+    chat_completion = groq_client.chat.completions.create(
+        messages=[{"role": "user", "content": prompt}],
+        model="llama-3.3-70b-versatile",
+    )
+
+    ai_response = chat_completion.choices[0].message.content
+
+    return {
+        "file": file_data.get("name"),
+        "ai_analysis": ai_response
     }
