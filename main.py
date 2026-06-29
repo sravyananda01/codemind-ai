@@ -78,3 +78,20 @@ async def get_repo_files(owner: str, repo: str, token: str):
     ]
 
     return {"repo": repo, "files": files_list}
+@app.get("/file-content")
+async def get_file_content(owner: str, repo: str, path: str, token: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.github.com/repos/{owner}/{repo}/contents/{path}",
+            headers={"Authorization": f"token {token}"},
+        )
+        file_data = response.json()
+
+    import base64
+    encoded_content = file_data.get("content", "")
+    decoded_content = base64.b64decode(encoded_content).decode("utf-8")
+
+    return {
+        "file": file_data.get("name"),
+        "content": decoded_content
+    }
