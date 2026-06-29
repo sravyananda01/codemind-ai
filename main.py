@@ -131,3 +131,36 @@ Code:
         "file": file_data.get("name"),
         "ai_analysis": ai_response
     }
+@app.get("/generate-tests")
+async def generate_tests(owner: str, repo: str, path: str, token: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.github.com/repos/{owner}/{repo}/contents/{path}",
+            headers={"Authorization": f"token {token}"},
+        )
+        file_data = response.json()
+
+    import base64
+    encoded_content = file_data.get("content", "")
+    code_content = base64.b64decode(encoded_content).decode("utf-8")
+
+    prompt = f"""You are a senior software engineer who writes high-quality unit tests.
+Given the following code, write unit tests that cover the main functions and edge cases.
+Use an appropriate testing framework based on the language of the code.
+Only return the test code, with brief comments explaining each test.
+
+Code:
+{code_content}
+"""
+
+    chat_completion = groq_client.chat.completions.create(
+        messages=[{"role": "user", "content": prompt}],
+        model="llama-3.3-70b-versatile",
+    )
+
+    ai_response = chat_completion.choices[0].message.content
+
+    return {
+        "file": file_data.get("name"),
+        "generated_tests": ai_response
+    }
