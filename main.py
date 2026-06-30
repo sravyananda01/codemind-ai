@@ -8,6 +8,10 @@ from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct, VectorParams, Distance
 import uuid
+from sqlalchemy import create_engine, Column, String, Text, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from datetime import datetime
 
 load_dotenv()
 
@@ -22,6 +26,19 @@ qdrant_client = QdrantClient(
     url=os.getenv("QDRANT_URL"),
     api_key=os.getenv("QDRANT_API_KEY"),
 )
+DATABASE_URL = os.getenv("DATABASE_URL")
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine)
+Base = declarative_base()
+
+class QueryHistory(Base):
+    __tablename__ = "query_history"
+    id = Column(String, primary_key=True)
+    query = Column(Text)
+    answer = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+Base.metadata.create_all(engine)
 
 @app.get("/")
 def home():
@@ -312,6 +329,17 @@ If the snippets don't fully answer it, say what you can tell from them anyway.
     )
 
     ai_answer = chat_completion.choices[0].message.content
+
+    # Save this Q&A to the database
+    db = SessionLocal()
+    history_entry = QueryHistory(
+        id=str(uuid.uuid4()),
+        query=query,
+        answer=ai_answer,
+    )
+    db.add(history_entry)
+    db.commit()
+    db.close()
 
     return {
         "query": query,
