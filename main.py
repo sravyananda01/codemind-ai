@@ -277,3 +277,44 @@ async def search_code(query: str):
     ]
 
     return {"query": query, "results": results}
+@app.get("/ask-repo")
+async def ask_repo(query: str):
+    collection_name = "codemind_chunks"
+
+    query_embedding = embedding_model.encode([query])[0]
+
+    search_results = qdrant_client.query_points(
+        collection_name=collection_name,
+        query=query_embedding.tolist(),
+        limit=3,
+    )
+
+    # Combine the top matching code chunks into context for the AI
+    context_chunks = [point.payload.get("chunk_text") for point in search_results.points]
+    context_text = "\n\n---\n\n".join(context_chunks)
+
+    prompt = f"""You are a senior software engineer who deeply understands this codebase.
+A user asked the following question about the code:
+
+Question: {query}
+
+Here are the most relevant code snippets retrieved from the repository:
+
+{context_text}
+
+Based on these snippets, give a clear, direct answer to the user's question.
+If the snippets don't fully answer it, say what you can tell from them anyway.
+"""
+
+    chat_completion = groq_client.chat.completions.create(
+        messages=[{"role": "user", "content": prompt}],
+        model="llama-3.3-70b-versatile",
+    )
+
+    ai_answer = chat_completion.choices[0].message.content
+
+    return {
+        "query": query,
+        "answer": ai_answer,
+        "sources": [point.payload.get("file") for point in search_results.points]
+    }
