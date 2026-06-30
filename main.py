@@ -5,6 +5,9 @@ import os
 import httpx
 from groq import Groq
 from sentence_transformers import SentenceTransformer
+from qdrant_client import QdrantClient
+from qdrant_client.models import PointStruct, VectorParams, Distance
+import uuid
 
 load_dotenv()
 
@@ -15,6 +18,10 @@ CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
 REDIRECT_URI = "http://localhost:8000/auth/callback"
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+qdrant_client = QdrantClient(
+    url=os.getenv("QDRANT_URL"),
+    api_key=os.getenv("QDRANT_API_KEY"),
+)
 
 @app.get("/")
 def home():
@@ -194,4 +201,54 @@ async def chunk_and_embed(owner: str, repo: str, path: str, token: str):
         "total_chunks": len(chunks),
         "first_chunk_preview": chunks[0] if chunks else "",
         "embedding_size": len(embeddings[0]) if len(embeddings) > 0 else 0
+    }
+@app.get("/index-repo-file")
+async def index_repo_file(owner: str, repo: str, path: str, token: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.github.com/repos/{owner}/{repo}/contents/{path}",
+            headers={"Authorization": f"token {token}"},
+        )
+        file_data = response.json()
+
+    import base64
+    encoded_content = file_data.get("content", "")
+    code_content = base64.b64decode(encoded_content).decode("utf-8")
+
+    chunk_size = 500
+    chunks = [
+        code_content[i:i + chunk_size]
+        for i in range(0, len(code_content), chunk_size)
+    ]
+
+    embeddings = embedding_model.encode(chunks)
+
+    collection_name = "codemind_chunks"
+
+    # Create the collection if it doesn't exist yet
+    if not qdrant_client.collection_exists(collection_name):
+        qdrant_client.create_collection(
+            collection_name=collection_name,
+            vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+        )
+
+    points = [
+        PointStruct(
+            id=str(uuid.uuid4()),
+            vector=embeddings[i].tolist(),
+            payload={
+                "file": path,
+                "repo": repo,
+                "chunk_text": chunks[i],
+            },
+        )
+        for i in range(len(chunks))
+    ]
+
+    qdrant_client.upsert(collection_name=collection_name, points=points)
+
+    return {
+        "file": path,
+        "chunks_indexed": len(chunks),
+        "message": "Successfully stored in Qdrant!"
     }
