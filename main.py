@@ -252,3 +252,28 @@ async def index_repo_file(owner: str, repo: str, path: str, token: str):
         "chunks_indexed": len(chunks),
         "message": "Successfully stored in Qdrant!"
     }
+@app.get("/search-code")
+async def search_code(query: str):
+    collection_name = "codemind_chunks"
+
+    # Convert the user's question into an embedding
+    query_embedding = embedding_model.encode([query])[0]
+
+    # Search Qdrant for the most similar chunks
+    search_results = qdrant_client.query_points(
+        collection_name=collection_name,
+        query=query_embedding.tolist(),
+        limit=3,
+    )
+
+    results = [
+        {
+            "file": point.payload.get("file"),
+            "repo": point.payload.get("repo"),
+            "similarity_score": point.score,
+            "code_snippet": point.payload.get("chunk_text"),
+        }
+        for point in search_results.points
+    ]
+
+    return {"query": query, "results": results}
