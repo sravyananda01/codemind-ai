@@ -354,3 +354,20 @@ If the snippets don't fully answer it, say what you can tell from them anyway.
         "answer": ai_answer,
         "sources": [point.payload.get("file") for point in search_results.points]
     }
+@app.get("/history")
+def get_history():
+    db = SessionLocal()
+    history = db.query(QueryHistory).order_by(QueryHistory.created_at.desc()).all()
+    db.close()
+
+    return {
+        "history": [
+            {
+                "id": entry.id,
+                "query": entry.query,
+                "answer": entry.answer,
+                "created_at": str(entry.created_at)
+            }
+            for entry in history
+        ]
+    }
