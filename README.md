@@ -2,6 +2,8 @@
 
 **An AI-powered code review platform that understands your entire GitHub repository like a senior engineer.**
 
+🌐 **[Live Demo → codemind-ai-rosy.vercel.app](https://codemind-ai-rosy.vercel.app)**
+
 > Built by a 3rd-year CSE (AI & ML) student — not a tutorial project. Every line written from scratch.
 
 
