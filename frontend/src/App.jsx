@@ -1,10 +1,11 @@
 import { useState } from "react";
+import Landing from "./Landing";
 import History from "./History";
 import CodeReview from "./CodeReview";
 import "./App.css";
 
 function App() {
-  const [page, setPage] = useState("search");
+  const [page, setPage] = useState("landing");
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,11 +26,20 @@ function App() {
     setLoading(false);
   };
 
+  if (page === "landing") {
+    return <Landing onEnter={() => setPage("search")} />;
+  }
+
   return (
     <div className="container">
       <div className="header">
-        <h1>🧠 CodeMind AI</h1>
-        <p className="subtitle">Your AI-powered senior engineer — reviews code, generates tests, answers questions</p>
+        <h1 onClick={() => setPage("landing")} style={{ cursor: "pointer" }}>
+          🧠 CodeMind AI
+        </h1>
+        <p className="subtitle">
+          Your AI-powered senior engineer — reviews code, generates tests,
+          answers questions
+        </p>
       </div>
 
       <div className="nav">
@@ -64,7 +74,13 @@ function App() {
               onKeyDown={(e) => e.key === "Enter" && askRepo()}
             />
             <button onClick={askRepo} disabled={loading}>
-              {loading ? <><span className="spinner"></span>Thinking...</> : "Ask"}
+              {loading ? (
+                <>
+                  <span className="spinner"></span>Thinking...
+                </>
+              ) : (
+                "Ask"
+              )}
             </button>
           </div>
 
