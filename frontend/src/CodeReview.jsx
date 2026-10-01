@@ -1,5 +1,6 @@
 import { useState } from "react";
-
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 function CodeReview() {
   const [owner, setOwner] = useState("sravyananda01");
   const [repo, setRepo] = useState("");
@@ -79,7 +80,7 @@ function CodeReview() {
       {result && (
         <div className="answer-box">
           <h3>{mode === "review" ? "Code Review:" : "Generated Tests:"}</h3>
-          <pre className="code-output">{result}</pre>
+          <div className="code-output"><ReactMarkdown remarkPlugins={[remarkGfm]}>{result}</ReactMarkdown></div>
         </div>
       )}
     </div>

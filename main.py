@@ -156,7 +156,7 @@ Code:
 
     chat_completion = groq_client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
-        model="llama3-70b-8192",
+        model="openai/gpt-oss-20b",
     )
 
     ai_response = chat_completion.choices[0].message.content
@@ -189,7 +189,7 @@ Code:
 
     chat_completion = groq_client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
-        model="llama3-70b-8192",
+        model="openai/gpt-oss-20b",
     )
 
     ai_response = chat_completion.choices[0].message.content
@@ -333,7 +333,7 @@ If the snippets don't fully answer it, say what you can tell from them anyway.
 
     chat_completion = groq_client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
-        model="llama3-70b-8192",
+        model="openai/gpt-oss-20b",
     )
 
     ai_answer = chat_completion.choices[0].message.content

@@ -275,10 +275,45 @@ h1 {
 }
 
 .code-output {
-  white-space: pre-wrap;
   word-break: break-word;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.83rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.88rem;
   color: #ccc;
-  line-height: 1.7;
+  line-height: 1.8;
+}
+
+.code-output pre {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.82rem;
+  background: #0d0d18;
+  border: 1px solid #1a1a2e;
+  border-radius: 8px;
+  padding: 14px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.code-output table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+}
+
+.code-output th, .code-output td {
+  border: 1px solid #1a1a2e;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.code-output th {
+  background: #0d0d18;
+  color: #a78bfa;
+  font-weight: 600;
+}
+
+.code-output h1, .code-output h2, .code-output h3 {
+  color: #a78bfa;
+  font-family: 'Space Grotesk', sans-serif;
+  margin: 16px 0 8px;
 }

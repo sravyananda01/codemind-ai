@@ -1,8 +1,11 @@
 import { useState } from "react";
+import ReactMarkdown from "react";
+import remarkGfm from "remark-gfm";
 import Landing from "./Landing";
 import History from "./History";
 import CodeReview from "./CodeReview";
 import "./App.css";
+
 
 function App() {
   const [page, setPage] = useState("landing");
@@ -87,7 +90,7 @@ function App() {
           {answer && (
             <div className="answer-box">
               <h3>Answer:</h3>
-              <p>{answer}</p>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown>
             </div>
           )}
         </>
